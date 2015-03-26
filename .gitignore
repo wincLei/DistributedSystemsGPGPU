@@ -1,10 +1,5 @@
-.metadata
+.metadata/
+.recommenders/
 *.log
 *.prefs
-*.prefs
-*.class
-*.class
-*.class
-*.class
-*.class
 *.class
