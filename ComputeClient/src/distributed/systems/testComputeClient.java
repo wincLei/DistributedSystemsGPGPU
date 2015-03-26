@@ -5,13 +5,9 @@ package distributed.systems;
 
 import static org.junit.Assert.*;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 import org.junit.Test;
 
@@ -19,15 +15,27 @@ import org.junit.Test;
  * @author emilnielsen
  *
  */
-public class testComputeClient {
+public class testComputeClient implements Runnable {
 	
 	private static Random rand = new Random(System.currentTimeMillis());
 	
 	/**
 	 * @param args
-	 * @throws InterruptedException 
+	 * @throws Exception 
 	 */
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws Exception
+	{
+//		int[] tcp_free_ports = getFreePorts(1);
+//		Integer tcp_port = tcp_free_ports[0];
+		
+		/* format : Socket[addr=/192.168.1.64,port=53036,localport=9898]
+		host: 324-040.local/192.168.1.64
+		The capitalization server is running.
+		New connection with client# 0 at Socket[addr=/192.168.1.64,port=53036,localport=9898]
+		Connection with client# 0 closed
+		*/
+		
+		
 		// TODO Auto-generated method stub
 		try {
 			testSetup();
@@ -37,63 +45,86 @@ public class testComputeClient {
 		}
 	}
 	
-	//@Mock
-	//ComputeClient client;
-	
 	@Test
-	public static void testSetup() throws UnknownHostException, InterruptedException {
-		// TODO Auto-generated constructor stub
-		System.out.println("Testing: testSetup");
+	public static void testSetup() throws InterruptedException, IOException
+	{
+		String serverAddress = InetAddress.getLocalHost().getHostAddress();
+		Integer localPort = 9898;
+		System.out.println("Server address : " + serverAddress);
+		System.out.println("    Local port : " + localPort);
 		
-		Integer num_clients = 3;
-		Integer capability_mean = 5;
-		Integer capability_var = 2;
+		ComputeClient client = new ComputeClient(serverAddress, localPort, "thread_client_0");
+		client.start();
 		
-//		CentralNode central = new CentralNode();
-//		List <RelayNode> relays = new ArrayList<RelayNode>();
-//		List <IPCamera> cameras = new ArrayList<IPCamera>();
+		// create compute device
+		Integer deviceCapasity = 5;
+		ComputeDevice device = new ComputeDevice(deviceCapasity);
 		
-		List <ComputeClient> clients = new ArrayList<ComputeClient>();
-		ComputeClient client;
-		Map<String, Integer> status;
-		String str_ipv4;
+		// initialise concurrency framework
+		client.initConcurrencyFramework();
 		
-		for (Integer i=0; i<num_clients; i++){
-			client = new ComputeClient();
-			status = new HashMap<String, Integer>(); 
-			
-		    status.put("compute load", 0);
-			status.put("compute capasity", getGaussian(capability_mean, capability_var));
-			client.set_status(status);
-			
-			str_ipv4 = "0.0.0." + i;
-			client.set_self_ip(InetAddress.getByName(str_ipv4));
-			
-			clients.add(client);
-			
-		}
+		// add compute device to concurrency framework recources
+		client.concurrencyFramework.addDevice(device);
 		
-		// assert and print
-		for(ComputeClient obj : clients) {
-			assertNotEquals(obj.get_self_ip().getHostName(), "0.0.0.");
-			assertEquals(obj.get_status().get("compute load"), (Integer) 0);
-			assertTrue(obj.get_status().get("compute capasity") > (Integer) 0);
-			System.out.println(obj.get_self_ip().getHostName());
-			System.out.println(obj.get_status());
-			System.out.println();
-		}
+		/* initialise task */
+		String cameraAddress 	= InetAddress.getLocalHost().getHostAddress();
+		Integer cameraLocalPort = 8890;
+		Integer cameraUdpPort 	= 8891;
+		client.addTask(cameraAddress, cameraLocalPort, cameraUdpPort);
 		
+		// assert that it is false that the list of tasks is empty
+		assertFalse(client.tasks.isEmpty());
 		
+		// get a task object
+		Task task = client.tasks.get(0);
 		
-		/* MOCK
-		ComputeClient client = Mockito.mock(ComputeClient.class);
-		String str_ipv4 = "255.255.255.255";
-		InetAddress ipv4 = InetAddress.getByName(str_ipv4);
-		//client.set_self_ip(ipv4);
-		Mockito.when(client.get_self_ip()).thenReturn(ipv4);
-		assertEquals(client.get_self_ip(), ipv4);
-		*/
+		// add compute device to the tasks resource list
+		task.useDevice(client.concurrencyFramework.devices.get(0));
+		
+		// assert that it is false that the list of devices is empty
+		assertFalse(task.devices.isEmpty());
+		
+		// start running the task
+		task.start();
+		
+		// enqueue data
+		byte[] data = {0,1,2,3}; // received through the UDP socket
+		task.addToDeviceQueue(data);
+		
+		// dequeue data
+		assertEquals(task.takeFromDeviceQueue(), data);
+		byte[] dataFromQueue = task.takeFromDeviceQueue();
+		
+		// process data
+		Integer deviceAvailableThreads = 0;
+		deviceAvailableThreads = task.devices.get(0).availableThreads();
+		System.out.println("deviceAvailableThreads: " + deviceAvailableThreads);
+		System.out.println("task.devices.get(0).availableThreads.size(): " + task.devices.get(0).availableThreads.size());
+		client.concurrencyFramework.executeOnDevice(task.takeFromDeviceQueue(), task.devices.get(0), Task.capasityRate.fullrate);
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	/**
 	 *  non-body method
@@ -119,6 +150,39 @@ public class testComputeClient {
 			val = 1;
 		}
 	    return val;
+	}
+	
+	/**
+	 *  non-body method
+	 *  getFreePorts(int portNumber) throws IOException {
+	 */
+	public static int[] getFreePorts(int portNumber) throws IOException {
+	    int[] result = new int[portNumber];
+	    List<ServerSocket> servers = new ArrayList<ServerSocket>(portNumber);
+	    ServerSocket tempServer = null;
+
+	    for (int i=0; i<portNumber; i++) {
+	        try {
+	            tempServer = new ServerSocket(0);
+	            servers.add(tempServer);
+	            result[i] = tempServer.getLocalPort();
+	        } finally {
+	            for (ServerSocket server : servers) {
+	                try {
+	                    server.close();
+	                } catch (IOException e) {
+	                    // Continue closing servers.
+	                }
+	            }
+	        }
+	    }
+	    return result;
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
