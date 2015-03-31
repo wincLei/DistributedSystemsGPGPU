@@ -28,7 +28,7 @@ public class ConcurrencyFramework extends Thread
 		}else if(rate==Task.capasityRate.thirdrate){
 			requiredThreads = 33;
 		}
-		device.compute(data, requiredThreads);
+		// device.compute(data, requiredThreads);
 	}
 	
 	

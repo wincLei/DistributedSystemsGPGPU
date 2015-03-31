@@ -34,7 +34,7 @@ public class ComputeDevice extends Thread {
 	public void compute(byte[] data, Integer requiredThreads) {
 		// TODO Auto-generated method stub
 		if(availableThreads()>=requiredThreads){
-			availableThreads. mark threads with a TRUE to reserve
+			// availableThreads. mark threads with a TRUE to reserve
 		}else{
 			try {
 				throw new Exception();

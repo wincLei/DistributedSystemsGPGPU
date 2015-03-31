@@ -25,6 +25,8 @@ public class testComputeClient implements Runnable {
 	 */
 	public static void main(String[] args) throws Exception
 	{
+		testNetworkTopography();
+		
 //		int[] tcp_free_ports = getFreePorts(1);
 //		Integer tcp_port = tcp_free_ports[0];
 		
@@ -46,8 +48,133 @@ public class testComputeClient implements Runnable {
 	}
 	
 	@Test
+	
+	public static void testNetworkTopography()
+	{
+		boolean print 			= false;
+		int n_centrals 			= 0;	// the number of central nodes in the network at initialisation
+		int n_relaynodes 		= 3;	// the number of relay nodes in the network at initialisation
+		int n_computeclients 	= 8;	// the number of compute clients in the network at initialisation
+		int n_cameras 			= 8; 	// the number of IP cameras in the network at initialisation
+		
+		NetworkTopography topography = new NetworkTopography(n_centrals, n_relaynodes, n_computeclients, n_cameras);
+		
+		// initialise network elements
+		topography.initCentrals();
+		topography.initRelayNodes();
+		topography.initComputeClients();
+		topography.initCameras();
+		
+		// set the listen port
+		int listenport = 9898;
+		topography.setListenPort(listenport);
+		
+		// get all network elements
+		List<Object> objects = topography.getAllElements();
+		for(Object object: objects){
+			topography.ping(object);
+		}
+		
+		// set print boolean
+		print = false;
+		
+		// iterator for all network delays
+		Iterator iterator_objs = topography.delays.keySet().iterator();// Iterate on keys
+		
+		while(iterator_objs.hasNext()){
+			Object head_object = (Object) iterator_objs.next();
+			Map<Object, Float> delayToObject = topography.delays.get(head_object);
+			Iterator iterator_delays = delayToObject.keySet().iterator();// Iterate on keys
+			// print ping if object is a relay node
+			if(print){
+				if(head_object.getClass().equals(RelayNode.class)){
+					System.out.println(head_object);
+				}
+			}
+			
+			while (iterator_delays.hasNext()){
+				Object got_object = (Object) iterator_delays.next();
+				Float got_delay = (Float) delayToObject.get(got_object);
+				// print ping if object is a relay node
+				if(print){
+					if(head_object.getClass().equals(RelayNode.class)){
+						System.out.println("\t-> " + got_object + "\n\tping: " + got_delay + "[ms]");
+					}
+				}
+			}
+		}
+		
+		// set print boolean
+		print = true;
+		// create network element clusters, i.e. cameras and compute clients singularly attached to relay nodes
+		List<NetworkCluster> clusters = new ArrayList<NetworkCluster>();
+		
+//		Map<Object, Float> min_computeclient = new HashMap<Object, Float>();
+		ComputeClient min_computeclient;
+		IPCamera min_camera;
+		Float min_delay;
+		
+		for(RelayNode relay: topography.relaynodes){ // go through relay nodes
+			clusters.add(new NetworkCluster(relay));
+			
+			// add nearest compute clients
+			for(ComputeClient computeclient: topography.computeclients){ // go through compute clients
+				min_computeclient = computeclient;
+				min_delay = topography.delays.get(relay).get(computeclient);
+				
+				boolean isMin = true;
+				for(RelayNode relay_nested: topography.relaynodes){ // go through relay nodes
+					if(!relay_nested.equals(relay)){ // exclude current relay node
+						if(topography.delays.get(relay_nested).get(computeclient)<min_delay){
+							isMin = false;
+						}
+					}
+				}
+				if(isMin){
+					for(NetworkCluster cluster: clusters){
+						if(cluster.relay.equals(relay)){
+							cluster.addComputeClientWithDelay(min_computeclient, min_delay);
+						}
+					}
+				}
+			}
+			// add nearest camera
+			for(IPCamera camera: topography.cameras){ // go through cameras
+				min_camera = camera;
+				min_delay = topography.delays.get(relay).get(camera);
+				
+				boolean isMin = true;
+				for(RelayNode relay_nested: topography.relaynodes){ // go through relay nodes
+					if(!relay_nested.equals(relay)){ // exclude current relay node
+						if(topography.delays.get(relay_nested).get(camera)<min_delay){
+							isMin = false;
+						}
+					}
+				}
+				if(isMin){
+					for(NetworkCluster cluster: clusters){
+						if(cluster.relay.equals(relay)){
+							cluster.addCameraWithDelay(min_camera, min_delay);
+						}
+					}
+				}
+			}
+		}
+		
+		for(NetworkCluster cluster: clusters){
+			System.out.println("cluster @ relay: " + cluster.relay);
+			for(ComputeClient computeclient: cluster.computeclients.keySet()){
+				System.out.println("\t contains: " + computeclient + " at " + cluster.computeclients.get(computeclient) + " [ms]");
+			}
+			for(IPCamera camera: cluster.cameras.keySet()){
+				System.out.println("\t contains: " + camera + " at " + cluster.cameras.get(camera) + " [ms]");
+			}
+		}
+	}
+	
 	public static void testSetup() throws InterruptedException, IOException
 	{
+		/*
 		String serverAddress = InetAddress.getLocalHost().getHostAddress();
 		Integer localPort = 9898;
 		System.out.println("Server address : " + serverAddress);
@@ -66,7 +193,7 @@ public class testComputeClient implements Runnable {
 		// add compute device to concurrency framework recources
 		client.concurrencyFramework.addDevice(device);
 		
-		/* initialise task */
+		// initialise task
 		String cameraAddress 	= InetAddress.getLocalHost().getHostAddress();
 		Integer cameraLocalPort = 8890;
 		Integer cameraUdpPort 	= 8891;
@@ -101,6 +228,7 @@ public class testComputeClient implements Runnable {
 		System.out.println("deviceAvailableThreads: " + deviceAvailableThreads);
 		System.out.println("task.devices.get(0).availableThreads.size(): " + task.devices.get(0).availableThreads.size());
 		client.concurrencyFramework.executeOnDevice(task.takeFromDeviceQueue(), task.devices.get(0), Task.capasityRate.fullrate);
+		*/
 	}
 	
 	

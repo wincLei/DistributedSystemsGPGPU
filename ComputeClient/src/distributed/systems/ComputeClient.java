@@ -31,18 +31,20 @@ public class ComputeClient extends CommonComm implements Runnable
 	/**
 	 * ComputeClient(Integer capability_mean, Integer capability_var)
 	 */
-	public ComputeClient(String serverAddress, Integer localPort, String threadName)
+	public ComputeClient(int listenPort)
 	{
-		this.serverAddress = serverAddress;
-		this.localPort 		= localPort;
-		this.threadName 	= threadName;
+		super(listenPort);
 		
-		net.put("self_ipv4", null);
-		net.put("relay_ipv4", null);
-		net.put("central_ipv4", null);
-		
-	    status.put("compute load", null);
-		status.put("compute capasity", null);
+//		this.serverAddress = serverAddress;
+//		this.localPort 		= localPort;
+//		this.threadName 	= threadName;
+//		
+//		net.put("self_ipv4", null);
+//		net.put("relay_ipv4", null);
+//		net.put("central_ipv4", null);
+//		
+//	    status.put("compute load", null);
+//		status.put("compute capasity", null);
 		
 	}
 	

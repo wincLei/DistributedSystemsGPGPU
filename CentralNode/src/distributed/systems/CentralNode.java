@@ -11,7 +11,7 @@ public class CentralNode extends CommonComm
 	}
 	
 	
-	private LinkedList<> tcpsomefinsomefin...
+	// private LinkedList<> tcpsomefinsomefin...
 	
 	//As it is right now, the central node just allows other nodes to register with it
 	public CentralNode()
