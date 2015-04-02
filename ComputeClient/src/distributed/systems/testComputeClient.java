@@ -107,7 +107,7 @@ public class testComputeClient implements Runnable {
 		// set print boolean
 		print = true;
 		// create network element clusters, i.e. cameras and compute clients singularly attached to relay nodes
-		List<NetworkCluster> clusters = new ArrayList<NetworkCluster>();
+//		List<NetworkCluster> clusters = new ArrayList<NetworkCluster>();
 		
 //		Map<Object, Float> min_computeclient = new HashMap<Object, Float>();
 		ComputeClient min_computeclient;
@@ -115,7 +115,7 @@ public class testComputeClient implements Runnable {
 		Float min_delay;
 		
 		for(RelayNode relay: topography.relaynodes){ // go through relay nodes
-			clusters.add(new NetworkCluster(relay));
+			topography.clusters.add(new NetworkCluster(relay));
 			
 			// add nearest compute clients
 			for(ComputeClient computeclient: topography.computeclients){ // go through compute clients
@@ -131,7 +131,7 @@ public class testComputeClient implements Runnable {
 					}
 				}
 				if(isMin){
-					for(NetworkCluster cluster: clusters){
+					for(NetworkCluster cluster: topography.clusters){
 						if(cluster.relay.equals(relay)){
 							cluster.addComputeClientWithDelay(min_computeclient, min_delay);
 						}
@@ -152,7 +152,7 @@ public class testComputeClient implements Runnable {
 					}
 				}
 				if(isMin){
-					for(NetworkCluster cluster: clusters){
+					for(NetworkCluster cluster: topography.clusters){
 						if(cluster.relay.equals(relay)){
 							cluster.addCameraWithDelay(min_camera, min_delay);
 						}
@@ -161,7 +161,7 @@ public class testComputeClient implements Runnable {
 			}
 		}
 		
-		for(NetworkCluster cluster: clusters){
+		for(NetworkCluster cluster: topography.clusters){
 			System.out.println("cluster @ relay: " + cluster.relay);
 			for(ComputeClient computeclient: cluster.computeclients.keySet()){
 				System.out.println("\t contains: " + computeclient + " at " + cluster.computeclients.get(computeclient) + " [ms]");

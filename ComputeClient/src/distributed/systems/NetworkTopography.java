@@ -17,6 +17,7 @@ public class NetworkTopography {
 	public List<RelayNode> relaynodes 				= new ArrayList<RelayNode>();
 	public List<ComputeClient> computeclients 		= new ArrayList<ComputeClient>();
 	public List<IPCamera> cameras 					= new ArrayList<IPCamera>();
+	public List<NetworkCluster> clusters 			= new ArrayList<NetworkCluster>();
 	
 	public Map<Object, Map<Object, Float>> delays	= new HashMap<Object,Map<Object, Float>>();
 	public Map<Object, Float> delayToObject			= new HashMap<Object, Float>();
